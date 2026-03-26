@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Block Builder">
+<meta name="theme-color" content="#0d1117">
+<title>Block Pack Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --dark:    #0d1117;
+  --dark2:   #161b22;
+  --dark3:   #1a1f2e;
+  --panel:   #1e2433;
+  --accent:  #0f3460;
+  --green:   #4ecca3;
+  --green2:  #3db88a;
+  --text:    #e8eaf0;
+  --dim:     #6b7280;
+  --danger:  #e74c3c;
+  --warn:    #f39c12;
+  --sel:     #1e3a5f;
+  --sel-bd:  #4ecca3;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bot: env(safe-area-inset-bottom);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--dark);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── TOP BAR ── */
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--dark2);
+  padding: 10px 14px;
+  padding-top: calc(10px + var(--safe-top));
+  border-bottom: 1px solid #ffffff18;
+  gap: 10px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+#topbar .title { font-family: 'VT323', monospace; font-size: 22px; color: var(--green); letter-spacing: 1px; white-space: nowrap; }
+#topbar .subtitle { font-size: 10px; color: var(--dim); display: none; }
+#pack-name-input {
+  background: var(--accent);
+  border: none;
+  color: var(--green);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  flex: 1;
+  min-width: 0;
+  max-width: 180px;
+}
+#pack-name-input:focus { outline: 1px solid var(--green); }
+#export-btn {
+  background: var(--green);
+  color: #000;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+#export-btn:active { background: var(--green2); transform: scale(0.97); }
+#export-btn.dim { background: #2a6048; color: #000; }
+
+/* ── LAYOUT ── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── LEFT SIDEBAR ── */
+#sidebar {
+  width: 200px;
+  background: var(--dark3);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ffffff10;
+  flex-shrink: 0;
+}
+#sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 8px;
+  border-bottom: 1px solid #ffffff10;
+}
+#sidebar-header span { font-size: 10px; color: var(--dim); letter-spacing: 1px; }
+#new-block-btn {
+  background: var(--accent);
+  color: var(--green);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+#new-block-btn:active { background: var(--green); color: #000; }
+#block-list { flex: 1; overflow-y: auto; }
+#block-list::-webkit-scrollbar { width: 4px; }
+#block-list::-webkit-scrollbar-track { background: transparent; }
+#block-list::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+.block-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 8px;
+  gap: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #ffffff08;
+  transition: background 0.1s;
+  position: relative;
+}
+.block-item:active { background: var(--sel); }
+.block-item.selected { background: var(--sel); border-left: 2px solid var(--sel-bd); }
+.block-item .thumb { width: 36px; height: 36px; border-radius: 3px; flex-shrink: 0; image-rendering: pixelated; }
+.block-item .info { flex: 1; min-width: 0; }
+.block-item .bname { font-size: 11px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.block-item .bid   { font-size: 9px;  color: var(--dim); margin-top: 1px; }
+.block-item .bstat { font-size: 9px;  margin-top: 2px; }
+.block-item .bstat.ok   { color: var(--green); }
+.block-item .bstat.warn { color: var(--warn); }
+.block-item .bstat.none { color: var(--dim); }
+.block-item .del-btn {
+  font-size: 14px; color: #333344; padding: 2px 4px;
+  flex-shrink: 0; border: none; background: none; cursor: pointer;
+  transition: color 0.15s;
+}
+.block-item .del-btn:active { color: var(--danger); }
+
+#dup-btn {
+  margin: 6px 8px 8px;
+  padding: 7px;
+  background: var(--dark2);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  border: 1px solid #ffffff15;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: center;
+}
+#dup-btn:active { background: var(--accent); color: var(--green); }
+
+/* ── CENTRE EDITOR ── */
+#editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+#editor::-webkit-scrollbar { width: 4px; }
+#editor::-webkit-scrollbar-thumb { background: var(--accent); }
+
+#fields-bar {
+  background: var(--dark2);
+  padding: 10px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid #ffffff10;
+  flex-shrink: 0;
+}
+.field-group { display: flex; align-items: center; gap: 6px; }
+.field-label { font-size: 10px; color: var(--dim); white-space: nowrap; }
+.field-input {
+  background: var(--accent);
+  border: none;
+  color: var(--green);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 3px;
+  width: 130px;
+}
+.field-input:focus { outline: 1px solid var(--green); }
+
+#faces-section { padding: 12px 14px 8px; flex-shrink: 0; }
+#faces-label { font-size: 10px; color: var(--dim); letter-spacing: 1px; margin-bottom: 10px; }
+
+/* ── FACE CROSS GRID ── */
+#face-cross {
+  display: grid;
+  grid-template-columns: repeat(4, 80px);
+  grid-template-rows:    repeat(3, 90px);
+  gap: 6px;
+  width: fit-content;
+}
+.face-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.face-slot.empty-slot { visibility: hidden; }
+
+.face-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 4px;
+  border: 2px solid var(--dim);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.15s, transform 0.1s;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.face-btn canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.face-btn.has-texture { border-color: var(--green); }
+.face-btn:active { transform: scale(0.94); }
+.face-btn .clear-x {
+  position: absolute; top: 2px; right: 3px;
+  font-size: 11px; color: #ff6b6bcc; line-height: 1;
+  font-weight: bold;
+}
+
+.face-label {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 72px;
+}
+.face-label .fname { font-size: 9px; color: #fff; font-weight: bold; }
+.face-label .fstat { font-size: 9px; color: var(--dim); }
+.face-label .fstat.set { color: var(--green); }
+
+/* Grid placement for cross layout */
+/* Row 0: top centered at col 1 */
+.face-slot[data-face="top"]    { grid-row: 1; grid-column: 2; }
+/* Row 1: west north east south */
+.face-slot[data-face="west"]   { grid-row: 2; grid-column: 1; }
+.face-slot[data-face="north"]  { grid-row: 2; grid-column: 2; }
+.face-slot[data-face="east"]   { grid-row: 2; grid-column: 3; }
+.face-slot[data-face="south"]  { grid-row: 2; grid-column: 4; }
+/* Row 2: bottom centered at col 1 */
+.face-slot[data-face="bottom"] { grid-row: 3; grid-column: 2; }
+
+#action-btns { display: flex; gap: 8px; padding: 4px 14px 14px; flex-shrink: 0; }
+.action-btn {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.1s;
+}
+.action-btn:active { transform: scale(0.97); }
+.btn-green { background: var(--green); color: #000; }
+.btn-green:active { background: var(--green2); }
+.btn-red   { background: var(--danger); color: #fff; }
+.btn-red:active { background: #c0392b; }
+
+/* ── RIGHT PREVIEW PANEL ── */
+#preview-panel {
+  width: 190px;
+  background: var(--dark3);
+  border-left: 1px solid #ffffff10;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 10px;
+  gap: 12px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+.panel-label { font-size: 10px; color: var(--dim); letter-spacing: 1px; margin-bottom: 6px; }
+#preview-canvas {
+  width: 170px; height: 170px;
+  background: var(--dark);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  image-rendering: pixelated;
+  display: block;
+}
+#face-status { display: flex; flex-direction: column; gap: 4px; }
+.status-row { display: flex; align-items: center; gap: 6px; font-size: 10px; }
+.status-dot { font-size: 8px; }
+.status-dot.on  { color: var(--green); }
+.status-dot.off { color: var(--dim); }
+.status-name.on  { color: var(--text); }
+.status-name.off { color: var(--dim); }
+
+#pack-summary { font-size: 10px; color: var(--text); line-height: 1.8; }
+#pack-summary span { color: var(--dim); }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: calc(20px + var(--safe-bot)); left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--dark2); color: var(--text);
+  font-family: 'Share Tech Mono', monospace; font-size: 13px;
+  padding: 10px 20px; border-radius: 6px;
+  border: 1px solid var(--green);
+  white-space: nowrap; z-index: 999;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ── MOBILE: collapsed sidebar ── */
+@media (max-width: 700px) {
+  #sidebar { width: 160px; }
+  .face-btn { width: 60px; height: 60px; }
+  .face-label { width: 60px; }
+  #face-cross { grid-template-columns: repeat(4, 68px); grid-template-rows: repeat(3, 78px); gap: 4px; }
+  #preview-panel { width: 150px; }
+  #preview-canvas { width: 130px; height: 130px; }
+}
+@media (max-width: 560px) {
+  #sidebar { display: none; }
+  #sidebar.open { display: flex; position: fixed; left: 0; top: 0; bottom: 0; z-index: 200; width: 220px; box-shadow: 4px 0 20px #00000080; padding-top: var(--safe-top); }
+  #preview-panel { display: none; }
+  #topbar .title { font-size: 18px; }
+}
+
+/* Overlay for mobile sidebar */
+#overlay { display: none; position: fixed; inset: 0; background: #00000060; z-index: 199; }
+#overlay.show { display: block; }
+
+/* Mobile nav bar */
+#mobile-nav {
+  display: none;
+  background: var(--dark2);
+  border-top: 1px solid #ffffff10;
+  padding: 8px 20px;
+  padding-bottom: calc(8px + var(--safe-bot));
+  justify-content: space-around;
+}
+@media (max-width: 560px) {
+  #mobile-nav { display: flex; }
+}
+.nav-btn {
+  background: none; border: none; color: var(--dim);
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  cursor: pointer; padding: 4px 8px;
+}
+.nav-btn .nav-icon { font-size: 20px; }
+.nav-btn.active { color: var(--green); }
+
+/* hidden file input */
+input[type=file] { display: none; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="topbar">
+    <div>
+      <div class="title">&#9935; Block Builder</div>
+    </div>
+    <input id="pack-name-input" type="text" value="My Block Pack" placeholder="Pack name">
+    <button id="export-btn" class="dim">Export</button>
+  </div>
+
+  <div id="main">
+    <!-- Sidebar -->
+    <div id="sidebar">
+      <div id="sidebar-header">
+        <span>BLOCKS</span>
+        <button id="new-block-btn">+ New</button>
+      </div>
+      <div id="block-list"></div>
+      <button id="dup-btn">Duplicate Block</button>
+    </div>
+
+    <!-- Editor -->
+    <div id="editor">
+      <div id="fields-bar">
+        <div class="field-group">
+          <span class="field-label">ID:</span>
+          <input id="block-id-input" class="field-input" type="text" value="">
+        </div>
+        <div class="field-group">
+          <span class="field-label">Name:</span>
+          <input id="block-name-input" class="field-input" type="text" value="">
+        </div>
+      </div>
+
+      <div id="faces-section">
+        <div id="faces-label">BLOCK FACES &mdash; tap to set texture</div>
+        <div id="face-cross">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div id="action-btns">
+        <button class="action-btn btn-green" id="apply-all-btn">Apply to All Faces</button>
+        <button class="action-btn btn-red"   id="clear-all-btn">Clear All</button>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div id="preview-panel">
+      <div>
+        <div class="panel-label">PREVIEW</div>
+        <canvas id="preview-canvas" width="170" height="170"></canvas>
+      </div>
+      <div>
+        <div class="panel-label">FACE STATUS</div>
+        <div id="face-status"></div>
+      </div>
+      <div>
+        <div class="panel-label">PACK SUMMARY</div>
+        <div id="pack-summary"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile nav -->
+  <div id="mobile-nav">
+    <button class="nav-btn active" id="nav-blocks" onclick="openMobilePanel('blocks')">
+      <span class="nav-icon">&#9646;</span>Blocks
+    </button>
+    <button class="nav-btn" id="nav-editor" onclick="openMobilePanel('editor')">
+      <span class="nav-icon">&#9998;</span>Edit
+    </button>
+    <button class="nav-btn" id="nav-preview" onclick="openMobilePanel('preview')">
+      <span class="nav-icon">&#9671;</span>Preview
+    </button>
+  </div>
+</div>
+
+<div id="overlay" onclick="closeMobileSidebar()"></div>
+<div id="toast"></div>
+<input type="file" id="file-input" accept="image/*">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+// ── Constants ─────────────────────────────────────────────────────────────────
+const FACE_NAMES  = ["top","bottom","north","south","east","west"];
+const FACE_LABELS = {top:"Top",bottom:"Bottom",north:"Front",south:"Back",east:"Right",west:"Left"};
+const FACE_COLORS = {
+  top:"#5dade2",bottom:"#a569bd",north:"#52be80",
+  south:"#e67e22",east:"#ec7063",west:"#f4d03f"
+};
+const FACE_MAP = {top:"up",bottom:"down",north:"north",south:"south",east:"east",west:"west"};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let blocks  = [];
+let active  = null;
+let counter = 0;
+let pendingFace = null;   // which face the file input is for
+
+// ── Data Model ────────────────────────────────────────────────────────────────
+function newBlock() {
+  counter++;
+  return {
+    id:          `my_block_${counter}`,
+    displayName: `My Block ${counter}`,
+    faces: Object.fromEntries(FACE_NAMES.map(n => [n, {
+      name: n,
+      dataUrl: null,     // for display / preview
+      imgEl:   null,     // HTMLImageElement
+      canvas16: null,  // 16x16 canvas for export
+    }]))
+  };
+}
+
+function blockAnySet(b)  { return FACE_NAMES.some(n => b.faces[n].dataUrl); }
+function blockAllSet(b)  { return FACE_NAMES.every(n => b.faces[n].dataUrl); }
+function faceSetCount(b) { return FACE_NAMES.filter(n => b.faces[n].dataUrl).length; }
+
+// ── Image helpers ─────────────────────────────────────────────────────────────
+function hexToRgb(hex) {
+  const h = hex.replace("#","");
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+
+function drawCheckerboard(ctx, size) {
+  const sq = size / 8;
+  for (let r=0; r<8; r++) for (let c=0; c<8; c++) {
+    ctx.fillStyle = (r+c)%2===0 ? "#c8c8c8" : "#a8a8a8";
+    ctx.fillRect(c*sq, r*sq, sq, sq);
+  }
+}
+
+function drawFacePlaceholder(ctx, name, size) {
+  drawCheckerboard(ctx, size);
+  const [r,g,b] = hexToRgb(FACE_COLORS[name]);
+  ctx.fillStyle = `rgba(${r},${g},${b},0.35)`;
+  ctx.fillRect(0, 0, size, size);
+}
+
+// Scale image to target size via offscreen canvas
+function scaleToCanvas(img, targetW, targetH) {
+  // Store as a canvas element so we can call toDataURL reliably at export time
+  const c = document.createElement("canvas");
+  c.width = targetW; c.height = targetH;
+  const ctx = c.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, 0, 0, targetW, targetH);
+  return c;
+}
+
+function loadFaceImage(face, dataUrl) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      face.dataUrl = dataUrl;
+      face.imgEl   = img;
+      face.canvas16 = scaleToCanvas(img, 16, 16);  // 16x16 canvas for export
+      resolve();
+    };
+    img.src = dataUrl;
+  });
+}
+
+// ── Isometric Preview ─────────────────────────────────────────────────────────
+function drawIsoPreview(block, canvas) {
+  const size = canvas.width;
+  const ctx  = canvas.getContext("2d");
+  ctx.clearRect(0, 0, size, size);
+  ctx.fillStyle = "#0d1117";
+  ctx.fillRect(0,0,size,size);
+
+  const fs = Math.floor(size * 0.45);
+  const cx = size / 2;
+  const oy = Math.floor(fs * 0.25);
+  const ty = Math.floor(size * 0.08);
+
+  function drawFace(name, dx, dy, bright) {
+    const off = document.createElement("canvas");
+    off.width = fs; off.height = fs;
+    const octx = off.getContext("2d");
+    octx.imageSmoothingEnabled = false;
+    const face = block.faces[name];
+    if (face.imgEl) {
+      octx.drawImage(face.imgEl, 0, 0, fs, fs);
+    } else {
+      drawFacePlaceholder(octx, name, fs);
+    }
+    // Brightness via composite
+    if (bright < 1) {
+      octx.fillStyle = `rgba(0,0,0,${1-bright})`;
+      octx.globalCompositeOperation = "multiply";
+      octx.fillRect(0,0,fs,fs);
+      octx.globalCompositeOperation = "source-over";
+    }
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, dx, dy);
+  }
+
+  drawFace("top",   cx - fs/2, ty,          1.05);
+  drawFace("north", cx - fs,   ty + fs - oy, 0.80);
+  drawFace("east",  cx,        ty + fs - oy, 0.65);
+}
+
+function drawBlockThumb(block, canvas) {
+  const size = canvas.width;
+  const ctx  = canvas.getContext("2d");
+  ctx.clearRect(0, 0, size, size);
+  const h = Math.floor(size/2);
+  ctx.imageSmoothingEnabled = false;
+
+  const topFace  = block.faces["top"];
+  const sideFace = block.faces["north"] || block.faces["east"];
+
+  const drawHalf = (face, name, dy, bright) => {
+    if (face && face.imgEl) {
+      ctx.drawImage(face.imgEl, 0, dy, size, h);
+    } else {
+      const off = document.createElement("canvas");
+      off.width = size; off.height = h;
+      drawFacePlaceholder(off.getContext("2d"), name, h);
+      ctx.drawImage(off, 0, dy);
+    }
+    if (bright < 1) {
+      ctx.fillStyle = `rgba(0,0,0,${1-bright})`;
+      ctx.fillRect(0, dy, size, h);
+    }
+  };
+  drawHalf(topFace,  "top",   0,  1.0);
+  drawHalf(sideFace, "north", h,  0.75);
+}
+
+// ── Render Functions ──────────────────────────────────────────────────────────
+function renderFaceCross() {
+  const container = document.getElementById("face-cross");
+  container.innerHTML = "";
+  if (!active) return;
+
+  FACE_NAMES.forEach(name => {
+    const slot = document.createElement("div");
+    slot.className = "face-slot";
+    slot.dataset.face = name;
+
+    const btn = document.createElement("div");
+    btn.className = "face-btn" + (active.faces[name].dataUrl ? " has-texture" : "");
+    btn.dataset.face = name;
+
+    const cnv = document.createElement("canvas");
+    cnv.width = 72; cnv.height = 72;
+    const ctx = cnv.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    const face = active.faces[name];
+    if (face.imgEl) {
+      ctx.drawImage(face.imgEl, 0, 0, 72, 72);
+    } else {
+      drawFacePlaceholder(ctx, name, 72);
+    }
+    btn.appendChild(cnv);
+
+    if (face.dataUrl) {
+      const x = document.createElement("div");
+      x.className = "clear-x";
+      x.textContent = "x";
+      x.addEventListener("click", e => { e.stopPropagation(); clearFace(name); });
+      btn.appendChild(x);
+    }
+
+    btn.addEventListener("click", () => pickTexture(name));
+
+    const lrow = document.createElement("div");
+    lrow.className = "face-label";
+    lrow.innerHTML = `<span class="fname">${FACE_LABELS[name]}</span>
+      <span class="fstat${face.dataUrl ? " set" : ""}">${face.dataUrl ? "set" : "empty"}</span>`;
+
+    slot.appendChild(btn);
+    slot.appendChild(lrow);
+    container.appendChild(slot);
+  });
+}
+
+function renderBlockList() {
+  const list = document.getElementById("block-list");
+  list.innerHTML = "";
+  blocks.forEach(b => {
+    const item = document.createElement("div");
+    item.className = "block-item" + (b === active ? " selected" : "");
+    item.dataset.bid = b.id;
+
+    const thumb = document.createElement("canvas");
+    thumb.className = "thumb";
+    thumb.width = 36; thumb.height = 36;
+    drawBlockThumb(b, thumb);
+
+    const n = faceSetCount(b);
+    const statClass = n === 0 ? "none" : n < 6 ? "warn" : "ok";
+    const statText  = n === 0 ? "No textures" : n < 6 ? `${n}/6 faces` : "All 6 faces";
+
+    item.innerHTML = `
+      <canvas class="thumb" width="36" height="36"></canvas>
+      <div class="info">
+        <div class="bname">${b.displayName}</div>
+        <div class="bid">custom:${b.id}</div>
+        <div class="bstat ${statClass}">${statText}</div>
+      </div>
+      <button class="del-btn" data-bid="${b.id}">x</button>`;
+
+    // redraw thumb into the real canvas element
+    drawBlockThumb(b, item.querySelector("canvas"));
+
+    item.addEventListener("click", e => {
+      if (e.target.classList.contains("del-btn")) return;
+      selectBlock(b);
+    });
+    item.querySelector(".del-btn").addEventListener("click", e => {
+      e.stopPropagation();
+      deleteBlock(b);
+    });
+    list.appendChild(item);
+  });
+}
+
+function renderFaceStatus() {
+  const sf = document.getElementById("face-status");
+  sf.innerHTML = "";
+  if (!active) return;
+  FACE_NAMES.forEach(n => {
+    const has = !!active.faces[n].dataUrl;
+    sf.innerHTML += `<div class="status-row">
+      <span class="status-dot ${has?"on":"off"}">&#9679;</span>
+      <span class="status-name ${has?"on":"off"}">${FACE_LABELS[n]}${has?" &#10003;":""}</span>
+    </div>`;
+  });
+}
+
+function renderPackSummary() {
+  const total  = blocks.length;
+  const hasAny = blocks.filter(blockAnySet).length;
+  const full   = blocks.filter(blockAllSet).length;
+  document.getElementById("pack-summary").innerHTML =
+    `<span>${total}</span> block${total!==1?"s":""} in pack<br>` +
+    `<span>${hasAny}</span> with textures<br>` +
+    `<span>${full}</span> fully complete`;
+}
+
+function renderPreview() {
+  if (!active) return;
+  const canvas = document.getElementById("preview-canvas");
+  drawIsoPreview(active, canvas);
+}
+
+function renderFieldBar() {
+  if (!active) return;
+  document.getElementById("block-id-input").value   = active.id;
+  document.getElementById("block-name-input").value = active.displayName;
+}
+
+function renderExportBtn() {
+  const btn = document.getElementById("export-btn");
+  const ready = blocks.some(blockAnySet);
+  btn.className = ready ? "" : "dim";
+}
+
+function renderAll() {
+  renderBlockList();
+  renderFaceCross();
+  renderFaceStatus();
+  renderPreview();
+  renderPackSummary();
+  renderFieldBar();
+  renderExportBtn();
+}
+
+// ── Block Operations ──────────────────────────────────────────────────────────
+function addBlock() {
+  const b = newBlock();
+  blocks.push(b);
+  selectBlock(b);
+}
+
+function selectBlock(b) {
+  active = b;
+  renderAll();
+}
+
+function deleteBlock(b) {
+  if (blocks.length === 1) { toast("Pack must have at least one block"); return; }
+  if (!confirm(`Delete "${b.displayName}"?`)) return;
+  const idx = blocks.indexOf(b);
+  blocks.splice(idx, 1);
+  if (active === b) active = blocks[Math.max(0, idx-1)];
+  renderAll();
+}
+
+function duplicateBlock() {
+  if (!active) return;
+  const src = active;
+  const nb  = newBlock();
+  nb.displayName = src.displayName + " Copy";
+  // Copy face data
+  const promises = FACE_NAMES.map(n => {
+    if (src.faces[n].dataUrl) return loadFaceImage(nb.faces[n], src.faces[n].dataUrl);
+    return Promise.resolve();
+  });
+  Promise.all(promises).then(() => {
+    blocks.push(nb);
+    selectBlock(nb);
+  });
+}
+
+// ── Texture Picking ───────────────────────────────────────────────────────────
+function pickTexture(faceName) {
+  pendingFace = faceName;
+  const fi = document.getElementById("file-input");
+  fi.value = "";
+  fi.click();
+}
+
+function pickTextureForAll() {
+  pendingFace = "__all__";
+  const fi = document.getElementById("file-input");
+  fi.value = "";
+  fi.click();
+}
+
+document.getElementById("file-input").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  if (!file || !active) return;
+  const dataUrl = await readFileAsDataURL(file);
+  if (pendingFace === "__all__") {
+    await Promise.all(FACE_NAMES.map(n => loadFaceImage(active.faces[n], dataUrl)));
+  } else {
+    await loadFaceImage(active.faces[pendingFace], dataUrl);
+  }
+  renderAll();
+});
+
+function readFileAsDataURL(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function clearFace(name) {
+  if (!active) return;
+  active.faces[name] = { name, dataUrl: null, imgEl: null, canvas16: null };
+  renderAll();
+}
+
+// ── Field change handlers ─────────────────────────────────────────────────────
+document.getElementById("block-id-input").addEventListener("input", e => {
+  if (!active) return;
+  active.id = e.target.value.toLowerCase().replace(/[\s-]+/g,"_");
+  renderBlockList();
+  renderPackSummary();
+});
+
+document.getElementById("block-name-input").addEventListener("input", e => {
+  if (!active) return;
+  active.displayName = e.target.value;
+  renderBlockList();
+  renderPackSummary();
+});
+
+// ── Export (JSZip) ────────────────────────────────────────────────────────────
+async function exportPack() {
+  const ready = blocks.filter(blockAnySet);
+  if (!ready.length) { toast("Add textures to at least one block first"); return; }
+
+  const packName = document.getElementById("pack-name-input").value.trim() || "My Block Pack";
+  const zip      = new JSZip();
+  const bp       = zip.folder("behavior_pack");
+  const rp       = zip.folder("resource_pack");
+  const rpTex    = rp.folder("textures").folder("blocks");
+  const rpTexts  = rp.folder("texts");
+
+  const mkUuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random()*16|0;
+    return (c==='x'?r:(r&0x3|0x8)).toString(16);
+  });
+
+  const manifest = (name, desc, type) => JSON.stringify({
+    format_version: 2,
+    header: { name, description: desc, uuid: mkUuid(), version:[1,0,0], min_engine_version:[1,20,0] },
+    modules: [{ type, uuid: mkUuid(), version:[1,0,0] }]
+  }, null, 2);
+
+  bp.file("manifest.json", manifest(`${packName} BP`, `Behavior pack for ${packName}`, "data"));
+  rp.file("manifest.json", manifest(`${packName} RP`, `Resource pack for ${packName}`, "resources"));
+
+  const terrainData = {};
+  const blocksJson  = {};
+  const langLines   = [];
+
+  for (const block of ready) {
+    const bid    = block.id.toLowerCase().replace(/[\s-]+/g,"_");
+    const paths  = new Set(FACE_NAMES.filter(n => block.faces[n].dataUrl).map(n => block.faces[n].dataUrl));
+    const uniform = paths.size <= 1;
+
+    // Block definition
+    let instances;
+    if (uniform) {
+      instances = { "*": { texture: bid, render_method: "opaque" } };
+    } else {
+      instances = {};
+      FACE_NAMES.forEach(fn => {
+        const key = block.faces[fn].dataUrl ? `${bid}_${fn}` : bid;
+        instances[FACE_MAP[fn]] = { texture: key, render_method: "opaque" };
+      });
+    }
+    const blockDef = {
+      format_version: "1.20.0",
+      "minecraft:block": {
+        description: { identifier: `custom:${bid}`, menu_category: { category: "construction" } },
+        components:  { "minecraft:material_instances": instances }
+      }
+    };
+    bp.folder("blocks").file(`${bid}.json`, JSON.stringify(blockDef, null, 2));
+
+    // Textures
+    if (uniform) {
+      const face = FACE_NAMES.map(n => block.faces[n]).find(f => f.canvas16);
+      if (face) {
+        rpTex.file(`${bid}.png`, faceCanvasToPngBase64(face.canvas16), {base64:true});
+        terrainData[bid] = { textures: `textures/blocks/${bid}` };
+      }
+      blocksJson[`custom:${bid}`] = { sound: "stone", textures: bid };
+    } else {
+      const texMap = {};
+      FACE_NAMES.forEach(fn => {
+        const face = block.faces[fn];
+        if (face.canvas16) {
+          const key = `${bid}_${fn}`;
+          rpTex.file(`${key}.png`, faceCanvasToPngBase64(face.canvas16), {base64:true});
+          terrainData[key] = { textures: `textures/blocks/${key}` };
+          texMap[FACE_MAP[fn]] = key;
+        }
+      });
+      blocksJson[`custom:${bid}`] = { sound: "stone", textures: texMap };
+    }
+    langLines.push(`tile.custom:${bid}.name=${block.displayName}`);
+  }
+
+  rp.folder("textures").file("terrain_texture.json", JSON.stringify({
+    resource_pack_name: "custom", texture_name: "atlas.terrain", texture_data: terrainData
+  }, null, 2));
+  rp.file("blocks.json", JSON.stringify(blocksJson, null, 2));
+  rpTexts.file("en_US.lang", langLines.join("\n") + "\n");
+
+  const blob  = await zip.generateAsync({ type: "blob" });
+  const fname = packName.toLowerCase().replace(/\s+/g,"_") + ".mcaddon";
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement("a");
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const skipped = blocks.length - ready.length;
+  toast(`Exported ${ready.length} block${ready.length!==1?"s":""}!${skipped?` (${skipped} skipped)`:""}`);
+}
+
+// Convert a 16x16 canvas to base64 PNG for JSZip
+function faceCanvasToPngBase64(canvas) {
+  // toDataURL returns "data:image/png;base64,<data>" — we strip the prefix
+  // and tell JSZip it is base64 via the {base64:true} option at file() call time
+  return canvas.toDataURL("image/png").split(",")[1];
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2800);
+}
+
+// ── Mobile panels ─────────────────────────────────────────────────────────────
+function openMobilePanel(panel) {
+  const sidebar  = document.getElementById("sidebar");
+  const preview  = document.getElementById("preview-panel");
+  const overlay  = document.getElementById("overlay");
+  ["nav-blocks","nav-editor","nav-preview"].forEach(id =>
+    document.getElementById(id).classList.remove("active"));
+
+  if (panel === "blocks") {
+    sidebar.classList.add("open");
+    overlay.classList.add("show");
+    document.getElementById("nav-blocks").classList.add("active");
+  } else {
+    closeMobileSidebar();
+    if (panel === "preview") {
+      preview.style.display = "flex";
+      document.getElementById("nav-preview").classList.add("active");
+    } else {
+      preview.style.display = "none";
+      document.getElementById("nav-editor").classList.add("active");
+    }
+  }
+}
+
+function closeMobileSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+}
+
+// ── Wire up buttons ───────────────────────────────────────────────────────────
+document.getElementById("new-block-btn").addEventListener("click", addBlock);
+document.getElementById("dup-btn").addEventListener("click",       duplicateBlock);
+document.getElementById("apply-all-btn").addEventListener("click", pickTextureForAll);
+document.getElementById("clear-all-btn").addEventListener("click", () => {
+  if (!active) return;
+  if (!confirm(`Clear all textures from "${active.displayName}"?`)) return;
+  FACE_NAMES.forEach(n => { active.faces[n] = {name:n, dataUrl:null, imgEl:null, px16:null}; });
+  renderAll();
+});
+document.getElementById("export-btn").addEventListener("click", exportPack);
+
+// ── PWA Service Worker ────────────────────────────────────────────────────────
+if ("serviceWorker" in navigator) {
+  // Inline SW via blob URL for single-file PWA
+  const swCode = `
+    const CACHE = 'blockbuilder-v1';
+    self.addEventListener('install',  e => { self.skipWaiting(); });
+    self.addEventListener('activate', e => clients.claim());
+    self.addEventListener('fetch', e => {
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    });
+  `;
+  const blob   = new Blob([swCode], { type: "application/javascript" });
+  const swUrl  = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+addBlock();
+</script>
+</body>
+</html>
